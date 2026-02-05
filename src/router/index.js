@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { supabase } from '../supabase.js';
 import Home from '../views/Home.vue';
 import AdminDashboard from '../views/AdminDashboard.vue';
+import AdminLayout from '../layouts/AdminLayout.vue';
 
 const routes = [
   {
@@ -11,13 +12,19 @@ const routes = [
     meta: { title: 'Delights - Home' }
   },
   {
-    path: '/admin/dashboard',
-    name: 'AdminDashboard',
-    component: AdminDashboard,
-    meta: { 
-      title: 'Admin Dashboard',
-      requiresAuth: true 
-    }
+    path: '/admin',
+    component: AdminLayout,
+    children: [
+      {
+        path: 'dashboard',
+        name: 'AdminDashboard',
+        component: AdminDashboard,
+        meta: { 
+          title: 'Admin Dashboard',
+          requiresAuth: true 
+        }
+      }
+    ]
   },
   {
     path: '/:pathMatch(.*)*',

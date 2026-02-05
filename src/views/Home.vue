@@ -1,22 +1,82 @@
 <template>
   <div class="home-page">
-    <!-- Hero Section -->
-    <section class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">Discover Amazing Products</h1>
-        <p class="hero-subtitle">Handpicked items just for you. Quality meets affordability.</p>
-        <div class="hero-stats">
-          <div class="stat">
-            <span class="stat-number">{{ products.length }}</span>
-            <span class="stat-label">Products</span>
+    <!-- Hero Carousel Section -->
+    <section class="hero-carousel-section">
+      <div class="carousel-container">
+        <!-- Carousel Wrapper -->
+        <div class="carousel-wrapper">
+          <div 
+            class="carousel-slides" 
+            :style="{ transform: `translateX(-${currentSlide * 100}%)` }"
+          >
+            <!-- Slide 1 -->
+            <div 
+              v-if="bestSellers[0]" 
+              class="carousel-slide" 
+              :style="{ backgroundImage: `url('${bestSellers[0].image_url || getDefaultImage(0)}')` }"
+            >
+              <!-- No content - just background image -->
+            </div>
+
+            <!-- Slide 2 -->
+            <div 
+              v-if="bestSellers[1]" 
+              class="carousel-slide" 
+              :style="{ backgroundImage: `url('${bestSellers[1].image_url || getDefaultImage(1)}')` }"
+            >
+              <!-- No content - just background image -->
+            </div>
+
+            <!-- Slide 3 -->
+            <div 
+              v-if="bestSellers[2]" 
+              class="carousel-slide" 
+              :style="{ backgroundImage: `url('${bestSellers[2].image_url || getDefaultImage(2)}')` }"
+            >
+              <!-- No content - just background image -->
+            </div>
+
+            <!-- Fallback slides if no best sellers -->
+            <div 
+              v-if="bestSellers.length === 0" 
+              class="carousel-slide" 
+              :style="{ backgroundImage: `url('${defaultImages[0]}')` }"
+            >
+              <!-- Default slide -->
+            </div>
+            <div 
+              v-if="bestSellers.length <= 1" 
+              class="carousel-slide" 
+              :style="{ backgroundImage: `url('${defaultImages[1]}')` }"
+            >
+              <!-- Default slide -->
+            </div>
+            <div 
+              v-if="bestSellers.length <= 2" 
+              class="carousel-slide" 
+              :style="{ backgroundImage: `url('${defaultImages[2]}')` }"
+            >
+              <!-- Default slide -->
+            </div>
           </div>
-          <div class="stat">
-            <span class="stat-icon">⭐</span>
-            <span class="stat-label">Premium Quality</span>
-          </div>
-          <div class="stat">
-            <span class="stat-icon">🚚</span>
-            <span class="stat-label">Fast Shipping</span>
+
+          <!-- Navigation Arrows -->
+          <button class="carousel-arrow carousel-arrow-left" @click="prevSlide">
+            ←
+          </button>
+          <button class="carousel-arrow carousel-arrow-right" @click="nextSlide">
+            →
+          </button>
+
+          <!-- Dots Indicator -->
+          <div class="carousel-dots">
+            <button 
+              v-for="index in totalSlides" 
+              :key="index" 
+              class="carousel-dot" 
+              :class="{ active: currentSlide === index - 1 }"
+              @click="goToSlide(index - 1)"
+            ></button>
           </div>
         </div>
       </div>
@@ -75,15 +135,53 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { supabase } from '../supabase.js';
 import ProductCard from '../components/ProductCard.vue';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const products = ref([]);
+const bestSellers = ref([]);
 const loading = ref(true);
 const hasMore = ref(false);
 const page = ref(1);
 const pageSize = 12;
+const currentSlide = ref(0);
+const autoSlideInterval = ref(null);
+
+// Default placeholder images for carousel
+const defaultImages = [
+  
+];
+
+const totalSlides = computed(() => {
+  return Math.max(1, Math.min(3, bestSellers.value.length || 1));
+});
+
+const getDefaultImage = (index) => {
+  return defaultImages[index % defaultImages.length];
+};
+
+// Fetch best seller products
+const fetchBestSellers = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('is_best_seller', true)
+      .order('created_at', { ascending: false })
+      .limit(3);
+    
+    if (error) throw error;
+    
+    bestSellers.value = data || [];
+    
+  } catch (err) {
+    console.error('Error fetching best sellers:', err);
+    bestSellers.value = [];
+  }
+};
 
 // Fetch products
 const fetchProducts = async () => {
@@ -118,6 +216,41 @@ const fetchProducts = async () => {
   }
 };
 
+// Carousel Controls
+const nextSlide = () => {
+  currentSlide.value = (currentSlide.value + 1) % totalSlides.value;
+  resetAutoSlide();
+};
+
+const prevSlide = () => {
+  currentSlide.value = (currentSlide.value - 1 + totalSlides.value) % totalSlides.value;
+  resetAutoSlide();
+};
+
+const goToSlide = (index) => {
+  currentSlide.value = index;
+  resetAutoSlide();
+};
+
+const startAutoSlide = () => {
+  autoSlideInterval.value = setInterval(() => {
+    nextSlide();
+  }, 5000);
+};
+
+const resetAutoSlide = () => {
+  if (autoSlideInterval.value) {
+    clearInterval(autoSlideInterval.value);
+    startAutoSlide();
+  }
+};
+
+const viewProduct = (productId) => {
+  if (productId) {
+    router.push(`/product/${productId}`);
+  }
+};
+
 // Load more products (for pagination)
 const loadMoreProducts = () => {
   page.value++;
@@ -126,7 +259,15 @@ const loadMoreProducts = () => {
 
 // Initialize
 onMounted(() => {
+  fetchBestSellers();
   fetchProducts();
+  startAutoSlide();
+});
+
+onUnmounted(() => {
+  if (autoSlideInterval.value) {
+    clearInterval(autoSlideInterval.value);
+  }
 });
 </script>
 
@@ -136,82 +277,106 @@ onMounted(() => {
   background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
 }
 
-/* Hero Section */
-.hero-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 80px 20px;
-  text-align: center;
+/* Hero Carousel Section */
+.hero-carousel-section {
+  width: 100%;
+  height: 70vh;
   position: relative;
   overflow: hidden;
 }
 
-.hero-section::before {
-  content: '';
+.carousel-container {
+  width: 100%;
+  height: 100%;
+}
+
+.carousel-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.carousel-slides {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s ease-in-out;
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+/* Navigation Arrows */
+.carousel-arrow {
   position: absolute;
-  top: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: 2px solid white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  font-size: 1.8rem;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.carousel-arrow:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow-left {
+  left: 30px;
+}
+
+.carousel-arrow-right {
+  right: 30px;
+}
+
+/* Dots Indicator */
+.carousel-dots {
+  position: absolute;
+  bottom: 30px;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
-  opacity: 0.1;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 1;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.hero-title {
-  font-size: 3.5rem;
-  font-weight: 800;
-  margin-bottom: 20px;
-  line-height: 1.2;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.hero-subtitle {
-  font-size: 1.3rem;
-  opacity: 0.9;
-  margin-bottom: 40px;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.hero-stats {
   display: flex;
   justify-content: center;
-  gap: 40px;
-  margin-top: 40px;
+  gap: 15px;
+  z-index: 10;
 }
 
-.stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.carousel-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
 }
 
-.stat-number {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #ffd700;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+.carousel-dot.active {
+  background: white;
+  transform: scale(1.2);
 }
 
-.stat-icon {
-  font-size: 2.5rem;
-  margin-bottom: 5px;
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  opacity: 0.9;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-top: 5px;
+.carousel-dot:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 
 /* Products Section */
@@ -379,18 +544,35 @@ onMounted(() => {
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .carousel-arrow {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+}
+
 @media (max-width: 768px) {
-  .hero-title {
-    font-size: 2.5rem;
+  .hero-carousel-section {
+    height: 70vh;
   }
   
-  .hero-subtitle {
-    font-size: 1.1rem;
+  .carousel-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
   }
   
-  .hero-stats {
-    flex-direction: column;
-    gap: 30px;
+  .carousel-arrow-left {
+    left: 15px;
+  }
+  
+  .carousel-arrow-right {
+    right: 15px;
+  }
+  
+  .carousel-dots {
+    bottom: 20px;
   }
   
   .section-title {
@@ -413,8 +595,14 @@ onMounted(() => {
 }
 
 @media (max-width: 480px) {
-  .hero-title {
-    font-size: 2rem;
+  .hero-carousel-section {
+    height: 60vh;
+  }
+  
+  .carousel-arrow {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
   }
   
   .products-grid {

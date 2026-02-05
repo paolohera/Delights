@@ -382,12 +382,15 @@ const handleLogoutMobile = async () => {
 </script>
 
 <style scoped>
+@import url('https://fonts.cdnfonts.com/css/varuna');
+
 .navbar {
   background: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);    
   position: sticky;
   top: 0;
   z-index: 1000;
+
 }
 
 .nav-container {
@@ -397,7 +400,7 @@ const handleLogoutMobile = async () => {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  height: 90px;
+  height: 100px;
   gap: 40px;
 }
 
@@ -406,6 +409,7 @@ const handleLogoutMobile = async () => {
   display: flex;
   align-items: center;
   gap: 15px;
+  font-family: 'VARUNA', sans-serif;
 }
 
 .nav-links-left {
@@ -423,7 +427,7 @@ const handleLogoutMobile = async () => {
   text-decoration: none;
   color: #333;
   padding: 10px 18px;
-  border-radius: 8px;
+margin-top: -10px;
   transition: all 0.3s ease;
   font-weight: 500;
   font-size: 0.95rem;
@@ -479,22 +483,18 @@ const handleLogoutMobile = async () => {
   transition: all 0.3s ease;
 }
 
-/* Remove the hover transform */
-.logo-link:hover {
-  /* No transform effect */
-}
-
 .logo-link:active {
   transform: scale(0.98);
 }
 
 .logo-image {
-  height: 60px;
+  height: 110px;
   width: auto;
   max-width: 150px;
   object-fit: contain;
   display: block;
   transition: none;
+  margin-top: -10px;
 }
 
 .logo-fallback {
