@@ -120,11 +120,11 @@ import { ref, onMounted, computed } from 'vue';
 import { supabase } from '../supabase.js';
 import { deleteImageFromStorage } from '../utils/storage.js';
 import { useRouter } from 'vue-router';
-import AdminMobileHeader from '../components/AdminMobileHeader.vue';
-import AdminSidebar from '../components/AdminSidebar.vue';
-import AdminDesktopHeader from '../components/AdminDesktopHeader.vue';
-import ProductManagement from '../components/ProductManagement.vue';
-import ProductModal from '../components/ProductModal.vue';
+import AdminMobileHeader from '../components/admin/AdminMobileHeader.vue';
+import AdminSidebar from '../components/admin/AdminSidebar.vue';
+import AdminDesktopHeader from '../components/admin/AdminDesktopHeader.vue';
+import ProductManagement from '../components/admin/ProductManagement.vue';
+import ProductModal from '../components/admin/ProductModal.vue';
 
 const router = useRouter();
 
